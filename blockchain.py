@@ -1,7 +1,10 @@
+from os import get_terminal_size
 import sys
 import hashlib
 import uuid
 from datetime import datetime
+
+from flask.app import Flask
 
 currentNodeUrl = str(sys.argv[2])
 
@@ -25,7 +28,7 @@ class Blockchain:
     def createNewBlock(self, nonce, previousBlockHash, hash):
         newBlock = {
             "index" : len(self.chain)+1,
-            "timestamp" : datetime.now(),
+            "timestamp" : str(datetime.now()),
             "transactions" : self.pendingTransactions,
             "nonce" : nonce,
             "hash" : hash,
@@ -64,5 +67,32 @@ class Blockchain:
             nonce = nonce + 1
             hash = self.hashBlock(previousBlockHash, currentBlockData, nonce)
         return nonce
+
+    def chainIsValid(self, blockchain):
+        validChain = True
+        for i in range(1, len(blockchain)):
+            currentBlock = blockchain[i]
+            prevBlock = blockchain[i-1]
+            blockHash = self.hashBlock(prevBlock['hash'], {"transactions" : currentBlock['transactions'], "index" : currentBlock['index']}, currentBlock['nonce'])
+            print('nonce : ' + blockHash)
+            if(blockHash[0:4] != "0000"):
+                validChain = False
+            if(currentBlock['previousBlockHash'] != prevBlock['hash']):
+                validChain = False
+        
+        genesisBlock = blockchain[0]
+        currentNonce = genesisBlock['nonce'] == 100
+        correctPreviousBlockHash = genesisBlock['previousBlockHash'] == '0'
+        correctHash = genesisBlock['hash'] == '0'
+        correctTransactions = len(genesisBlock['transactions']) == 0
+
+        if(currentNonce == False or correctPreviousBlockHash == False or correctHash == False or correctTransactions == False):
+            print('Last check')
+            validChain = False
+        
+        print(validChain)
+        return validChain
+    
+
 
     
