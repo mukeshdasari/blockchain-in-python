@@ -127,7 +127,6 @@ def chainConsensus():
     newLongestChain = None
     newPendingTransactions = None
     for blockchain in blockchains:
-        # print(len(blockchain['chain']))
         if(len(blockchain['chain']) > maxChainLength):
             maxChainLength = len(blockchain['chain'])
             newLongestChain = blockchain['chain']

@@ -44,14 +44,13 @@ class Blockchain:
     def createNewTransaction(self, amount, sender, recipient):
         newTransaction = {
             "amount":amount,
-            "sender":sender,
             "recipient":recipient,
+            "sender":sender,           
             "transactionId":str(uuid.uuid1()).replace('-','')
         }
         return newTransaction
 
     def addTransactionToPendingTransaction(self, transactionObj):
-        print(transactionObj)
         self.pendingTransactions.append(transactionObj)
         return self.getLastBlock()['index']+1
 
@@ -74,7 +73,7 @@ class Blockchain:
             currentBlock = blockchain[i]
             prevBlock = blockchain[i-1]
             blockHash = self.hashBlock(prevBlock['hash'], {"transactions" : currentBlock['transactions'], "index" : currentBlock['index']}, currentBlock['nonce'])
-            print('nonce : ' + blockHash)
+            
             if(blockHash[0:4] != "0000"):
                 validChain = False
             if(currentBlock['previousBlockHash'] != prevBlock['hash']):
@@ -87,10 +86,8 @@ class Blockchain:
         correctTransactions = len(genesisBlock['transactions']) == 0
 
         if(currentNonce == False or correctPreviousBlockHash == False or correctHash == False or correctTransactions == False):
-            print('Last check')
             validChain = False
         
-        print(validChain)
         return validChain
     
 
