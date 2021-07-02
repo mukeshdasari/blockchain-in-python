@@ -1,31 +1,43 @@
-from operator import contains, ne
+'''
+Author : Mukesh Dasari
+Last Modified : 07-01-2021
+Description : This file contains the flask server creation and all apis which are required
+to access/modify our blockchain network 
+
+'''
+
+# Importing all the required dependencies
 import sys
 import uuid
 from flask import Flask
 from flask import request
 from flask import json
-from flask.cli import routes_command
 from flask.json import jsonify
-from flask_restful import Api, abort
+from flask_restful import Api
 from blockchain import Blockchain
 import requests
 
-bitcoin = Blockchain()
-nodeAddress = str(uuid.uuid1()).replace('-','')
+bitcoin = Blockchain()      # Object creation of Blockchain class
+nodeAddress = str(uuid.uuid1()).replace('-','')     # Creating one unique random address (wallet) for our currrent host node 
 
 app = Flask(__name__)
 api = Api(app)
 
+# This is get api to fetch the whole blockchain data
 @app.route('/blockchain', methods=['GET'])
 def blk():
     return jsonify(bitcoin.serializer)
 
+# This api will only add the transaction data sent in body to blockchain's pending transactions list
 @app.route('/transaction', methods=['POST'])
 def addTransaction():
     newTransaction = request.json
     blockIndex = bitcoin.addTransactionToPendingTransaction(newTransaction)
     return jsonify({'note' : 'Transaction will be added in block' + str(blockIndex)})
 
+# This api will call proof of work function i.e mining
+# Once we get our nonce we create and broadcast one new transaction with amount 12.5 which are 
+# mined bicoins and rewarded to the current node (who has mined the block)
 @app.route('/mine', methods=['GET'])
 def mine():
     previousBlock = bitcoin.getLastBlock()
@@ -36,7 +48,6 @@ def mine():
     }
     nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData)
     blockHash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce)
-    # newTransaction = bitcoin.createNewTransaction(12.5, '00', nodeAddress)
     newBlock = bitcoin.createNewBlock(nonce, previousBlockHash, blockHash)
     for network in bitcoin.networkNodes:
         requests.post(network + "/receive-new-block", json=newBlock)
@@ -48,6 +59,7 @@ def mine():
             'block' : newBlock
     }
 
+# This api will only register the sent node with current node
 @app.route('/register-node', methods=['POST'])
 def registerNewNode():
     newNodeUrl = request.json['newNodeUrl']
@@ -57,6 +69,7 @@ def registerNewNode():
     else:
         return {'note' : "This node can not be registered."}
     
+# This api will register bulk of nodes with current node
 @app.route('/register-node-bulk', methods=['POST'])
 def registerBulkNodes():
     allNetworkNodes = request.json['allNetworkNodes']
@@ -74,6 +87,8 @@ def registerBulkNodes():
             response = response + node + " "
         return {'note' : response}
 
+# This function will register the sent node with current as well as with all other nodes
+# who are part of our blockchain network
 @app.route('/register-and-broadcast-node', methods=['POST'])
 def registerAndBroadcastNode():
     newNodeUrl = request.json["newNodeUrl"]
@@ -86,6 +101,7 @@ def registerAndBroadcastNode():
 
     return {"note" : "New node registerd with network successfully."}
 
+# This api is internally used by mine in which we append the new block to blockchain
 @app.route('/receive-new-block', methods=['POST'])
 def receiveNewBlock():
     newBlock = request.json
@@ -105,6 +121,8 @@ def receiveNewBlock():
             "newBlock" : newBlock
         }
 
+# This api will create new transaction and also broadcast to all other nodes 
+# who are part of our blockchain network
 @app.route('/transaction/broadcast', methods=['POST'])
 def transactionBroadcast():
     newTransaction = bitcoin.createNewTransaction(request.json['amount'], request.json['sender'], request.json['recipient'])
@@ -115,7 +133,9 @@ def transactionBroadcast():
 
     return {"note" : "Transaction created and broadcasted successfully."}
 
-
+# This api will make sure all the nodes are referring the same blockchain
+# Being on distributed network if node is joined very recently then that node 
+# can take a copy of the longest chain from the blockchain network
 @app.route('/consensus', methods=['GET'])
 def chainConsensus():
     blockchains = []
@@ -146,4 +166,5 @@ def chainConsensus():
         }
 
 if __name__ == '__main__':
+    # Running the server
     app.run(port=str(sys.argv[1]), debug=True)
