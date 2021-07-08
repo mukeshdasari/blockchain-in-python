@@ -15,7 +15,7 @@ from datetime import datetime
 
 currentNodeUrl = None       # Current host url
 
-if(len(sys.argv) != 3):     # Checking if all the parameters are passed
+if(len(sys.argv) < 3):     # Checking if all the parameters are passed
     error('Invalid inputs!')
     error('Usage : python networkNode.py port host')
     sys.exit(0)             # Terminating of execution
